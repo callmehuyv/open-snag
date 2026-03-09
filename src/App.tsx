@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useCaptureStore } from './stores/captureStore';
 import { useCapture } from './hooks/useCapture';
 import { useRecording } from './hooks/useRecording';
+import { listen } from '@tauri-apps/api/event';
 import Editor from './components/editor/Editor';
 import Library from './components/library/Library';
 import Settings from './components/settings/Settings';
@@ -182,9 +183,12 @@ function App() {
   const { currentView } = useCaptureStore();
 
   useEffect(() => {
-    // Listen for Tauri tray events in the future
-    // const unlisten = listen('tray-capture', () => { ... });
-    // return () => { unlisten.then(fn => fn()); };
+    const unlisten = listen('tray-open-library', () => {
+      useCaptureStore.getState().setCurrentView('library');
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
   }, []);
 
   switch (currentView) {

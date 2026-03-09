@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check:
     strategy:
@@ -20,11 +24,14 @@ jobs:
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
           workspaces: src-tauri -> target
+          shared-key: ci-${{ matrix.platform }}
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
@@ -38,7 +45,7 @@ jobs:
           cache: pnpm
 
       - name: Install frontend dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       - name: TypeScript check
         run: pnpm exec tsc --noEmit

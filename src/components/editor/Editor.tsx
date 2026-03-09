@@ -1,6 +1,9 @@
+import { useRef, useEffect, useCallback } from 'react';
 import { useCaptureStore } from '../../stores/captureStore';
 import { useEditorStore, ToolType } from '../../stores/editorStore';
 import * as api from '../../lib/tauri-api';
+import AnnotationCanvas, { CanvasHandle } from './Canvas';
+import PropertyPanel from './PropertyPanel';
 import {
   MousePointer,
   MoveRight,
@@ -15,6 +18,8 @@ import {
   ArrowLeft,
   Save,
   Copy,
+  Undo2,
+  Redo2,
 } from 'lucide-react';
 
 const tools: { type: ToolType; icon: React.ReactNode; label: string }[] = [
@@ -33,25 +38,65 @@ const tools: { type: ToolType; icon: React.ReactNode; label: string }[] = [
 export default function Editor() {
   const { currentCapture, setCurrentView } = useCaptureStore();
   const { activeTool, setActiveTool } = useEditorStore();
+  const canvasRef = useRef<CanvasHandle>(null);
 
-  const handleSave = async () => {
-    if (!currentCapture) return;
+  const handleSave = useCallback(async () => {
+    if (!canvasRef.current) return;
     try {
-      const path = await api.saveCapture(currentCapture);
-      console.log('Saved to:', path);
+      const imageData = await canvasRef.current.exportImage();
+      if (imageData) {
+        const path = await api.saveCapture(imageData);
+        console.log('Saved to:', path);
+      }
     } catch (error) {
       console.error('Save failed:', error);
     }
-  };
+  }, []);
 
-  const handleCopy = async () => {
-    if (!currentCapture) return;
+  const handleCopy = useCallback(async () => {
+    if (!canvasRef.current) return;
     try {
-      await api.copyToClipboard(currentCapture);
+      const imageData = await canvasRef.current.exportImage();
+      if (imageData) {
+        await api.copyToClipboard(imageData);
+      }
     } catch (error) {
       console.error('Copy failed:', error);
     }
-  };
+  }, []);
+
+  const handleUndo = useCallback(() => {
+    canvasRef.current?.undo();
+  }, []);
+
+  const handleRedo = useCallback(() => {
+    canvasRef.current?.redo();
+  }, []);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isMod = e.ctrlKey || e.metaKey;
+
+      if (isMod && e.shiftKey && e.key === 'z') {
+        e.preventDefault();
+        handleRedo();
+      } else if (isMod && e.key === 'z') {
+        e.preventDefault();
+        handleUndo();
+      } else if (e.key === 'Delete' || e.key === 'Backspace') {
+        // Only delete if not editing text
+        const activeEl = document.activeElement;
+        const isInput = activeEl instanceof HTMLInputElement || activeEl instanceof HTMLTextAreaElement;
+        if (!isInput) {
+          canvasRef.current?.deleteSelected();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleUndo, handleRedo]);
 
   return (
     <div className="flex flex-col h-screen bg-zinc-900 text-zinc-100">
@@ -63,6 +108,24 @@ export default function Editor() {
         >
           <ArrowLeft size={16} />
           Back
+        </button>
+
+        <div className="w-px h-6 bg-zinc-700 mx-1" />
+
+        {/* Undo/Redo */}
+        <button
+          onClick={handleUndo}
+          title="Undo (Ctrl+Z)"
+          className="p-2 rounded text-zinc-400 hover:bg-zinc-700 hover:text-white transition-colors"
+        >
+          <Undo2 size={18} />
+        </button>
+        <button
+          onClick={handleRedo}
+          title="Redo (Ctrl+Shift+Z)"
+          className="p-2 rounded text-zinc-400 hover:bg-zinc-700 hover:text-white transition-colors"
+        >
+          <Redo2 size={18} />
         </button>
 
         <div className="w-px h-6 bg-zinc-700 mx-1" />
@@ -104,17 +167,16 @@ export default function Editor() {
         </button>
       </div>
 
-      {/* Canvas area */}
-      <div className="flex-1 overflow-auto flex items-center justify-center bg-zinc-950 p-4">
-        {currentCapture ? (
-          <img
-            src={`data:image/png;base64,${currentCapture}`}
-            alt="Captured screenshot"
-            className="max-w-full max-h-full object-contain rounded shadow-lg"
-          />
-        ) : (
-          <p className="text-zinc-500">No capture to display</p>
-        )}
+      {/* Canvas + Property Panel */}
+      <div className="flex flex-1 overflow-hidden">
+        <div className="flex-1 overflow-auto flex items-center justify-center bg-zinc-950 p-4">
+          {currentCapture ? (
+            <AnnotationCanvas ref={canvasRef} />
+          ) : (
+            <p className="text-zinc-500">No capture to display</p>
+          )}
+        </div>
+        <PropertyPanel />
       </div>
     </div>
   );

@@ -1,9 +1,11 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useCaptureStore } from './stores/captureStore';
 import { useCapture } from './hooks/useCapture';
+import { useRecording } from './hooks/useRecording';
 import Editor from './components/editor/Editor';
 import Library from './components/library/Library';
 import Settings from './components/settings/Settings';
+import RecordingControls from './components/capture/RecordingControls';
 import {
   Monitor,
   Square,
@@ -11,12 +13,23 @@ import {
   FolderOpen,
   Settings as SettingsIcon,
   Camera,
+  Video,
 } from 'lucide-react';
 import './App.css';
 
 function Home() {
   const { setCurrentView } = useCaptureStore();
   const { captureFullscreen } = useCapture();
+  const { startRecording } = useRecording();
+
+  const handleStartRecording = async () => {
+    try {
+      await startRecording();
+      setCurrentView('recording');
+    } catch (error) {
+      console.error('Failed to start recording:', error);
+    }
+  };
 
   return (
     <div className="flex flex-col h-screen bg-zinc-900 text-zinc-100">
@@ -54,7 +67,7 @@ function Home() {
           <p className="text-sm text-zinc-500">Select how you want to capture your screen</p>
         </div>
 
-        <div className="grid grid-cols-3 gap-4 w-full max-w-lg">
+        <div className="grid grid-cols-4 gap-4 w-full max-w-2xl">
           {/* Fullscreen */}
           <button
             onClick={() => captureFullscreen(0)}
@@ -90,6 +103,18 @@ function Home() {
               <p className="text-xs text-zinc-500 mt-0.5">Cmd+Shift+5</p>
             </div>
           </button>
+
+          {/* Record Screen */}
+          <button
+            onClick={handleStartRecording}
+            className="flex flex-col items-center gap-3 p-6 rounded-xl bg-zinc-800 border border-zinc-700 hover:border-red-500 hover:bg-zinc-750 transition-all group"
+          >
+            <Video size={32} className="text-zinc-400 group-hover:text-red-400 transition-colors" />
+            <div className="text-center">
+              <p className="text-sm font-medium text-zinc-200">Record</p>
+              <p className="text-xs text-zinc-500 mt-0.5">Cmd+Shift+6</p>
+            </div>
+          </button>
         </div>
       </div>
 
@@ -119,6 +144,40 @@ function Home() {
   );
 }
 
+function RecordingView() {
+  const { setCurrentView } = useCaptureStore();
+  const [completedPath, setCompletedPath] = useState<string | null>(null);
+
+  const handleStop = (outputPath: string) => {
+    setCompletedPath(outputPath);
+  };
+
+  if (completedPath) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen bg-zinc-900 text-zinc-100 gap-4 px-6">
+        <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center">
+          <Video size={24} className="text-green-400" />
+        </div>
+        <h2 className="text-lg font-semibold">Recording saved</h2>
+        <p className="text-sm text-zinc-400 text-center break-all max-w-md">{completedPath}</p>
+        <button
+          onClick={() => setCurrentView('home')}
+          className="mt-4 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm transition-colors"
+        >
+          Back to Home
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-center justify-center h-screen bg-zinc-900 text-zinc-100">
+      <RecordingControls onStop={handleStop} />
+      <p className="text-sm text-zinc-500">Recording in progress...</p>
+    </div>
+  );
+}
+
 function App() {
   const { currentView } = useCaptureStore();
 
@@ -135,6 +194,8 @@ function App() {
       return <Library />;
     case 'settings':
       return <Settings />;
+    case 'recording':
+      return <RecordingView />;
     default:
       return <Home />;
   }

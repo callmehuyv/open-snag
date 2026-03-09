@@ -3,8 +3,12 @@ use base64::engine::general_purpose::STANDARD as BASE64;
 use serde::Serialize;
 
 use crate::capture::screenshot;
+use crate::recording::recorder::{RecordingStatus, ScreenRecorder};
 use crate::storage::database::{CaptureRecord, Database};
 use crate::storage::filesystem;
+
+/// Wrapper for ScreenRecorder so it can be used as Tauri managed state.
+pub struct RecorderState(pub ScreenRecorder);
 
 #[derive(Debug, Serialize, Clone)]
 pub struct CaptureResult {
@@ -178,4 +182,45 @@ pub async fn copy_to_clipboard(
     let _ = std::fs::remove_file(&temp_path);
 
     Ok(())
+}
+
+// ---------------------------------------------------------------------------
+// Recording commands
+// ---------------------------------------------------------------------------
+
+#[tauri::command]
+pub async fn start_recording(
+    state: tauri::State<'_, RecorderState>,
+    output_dir: Option<String>,
+    fps: Option<u32>,
+) -> Result<(), String> {
+    state.0.start_recording(output_dir, fps)
+}
+
+#[tauri::command]
+pub async fn stop_recording(
+    state: tauri::State<'_, RecorderState>,
+) -> Result<String, String> {
+    state.0.stop_recording()
+}
+
+#[tauri::command]
+pub async fn pause_recording(
+    state: tauri::State<'_, RecorderState>,
+) -> Result<(), String> {
+    state.0.pause_recording()
+}
+
+#[tauri::command]
+pub async fn resume_recording(
+    state: tauri::State<'_, RecorderState>,
+) -> Result<(), String> {
+    state.0.resume_recording()
+}
+
+#[tauri::command]
+pub async fn get_recording_status(
+    state: tauri::State<'_, RecorderState>,
+) -> Result<RecordingStatus, String> {
+    state.0.get_status()
 }

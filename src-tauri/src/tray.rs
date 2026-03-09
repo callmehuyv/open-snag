@@ -15,6 +15,13 @@ pub fn create_tray(app: &tauri::App) -> Result<(), String> {
         MenuItem::with_id(app, "capture_window", "Capture Window", true, Some("CmdOrCtrl+Shift+W"))
             .map_err(|e| format!("Failed to create menu item: {}", e))?;
 
+    let start_recording =
+        MenuItem::with_id(app, "start_recording", "Start Recording", true, Some("CmdOrCtrl+Shift+V"))
+            .map_err(|e| format!("Failed to create menu item: {}", e))?;
+    let stop_recording =
+        MenuItem::with_id(app, "stop_recording", "Stop Recording", true, None::<&str>)
+            .map_err(|e| format!("Failed to create menu item: {}", e))?;
+
     let separator1 = PredefinedMenuItem::separator(app)
         .map_err(|e| format!("Failed to create separator: {}", e))?;
 
@@ -35,6 +42,8 @@ pub fn create_tray(app: &tauri::App) -> Result<(), String> {
             &capture_screen,
             &capture_region,
             &capture_window,
+            &start_recording,
+            &stop_recording,
             &separator1,
             &open_library,
             &settings,
@@ -58,6 +67,12 @@ pub fn create_tray(app: &tauri::App) -> Result<(), String> {
             }
             "capture_window" => {
                 let _ = app.emit("tray-capture-window", ());
+            }
+            "start_recording" => {
+                let _ = app.emit("tray-start-recording", ());
+            }
+            "stop_recording" => {
+                let _ = app.emit("tray-stop-recording", ());
             }
             "open_library" => {
                 let _ = app.emit("tray-open-library", ());

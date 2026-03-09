@@ -1,8 +1,11 @@
 mod capture;
 mod commands;
+mod recording;
 mod storage;
 mod tray;
 
+use commands::RecorderState;
+use recording::recorder::ScreenRecorder;
 use storage::database::Database;
 use tauri::Manager;
 
@@ -24,6 +27,11 @@ pub fn run() {
             commands::get_captures,
             commands::delete_capture,
             commands::copy_to_clipboard,
+            commands::start_recording,
+            commands::stop_recording,
+            commands::pause_recording,
+            commands::resume_recording,
+            commands::get_recording_status,
         ])
         .setup(|app| {
             // Initialize database
@@ -35,6 +43,9 @@ pub fn run() {
             let db = Database::init(&app_data_dir)
                 .expect("Failed to initialize database");
             app.manage(db);
+
+            // Initialize screen recorder state
+            app.manage(RecorderState(ScreenRecorder::new()));
 
             // Create system tray
             tray::create_tray(app).expect("Failed to create system tray");

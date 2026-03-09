@@ -70,3 +70,29 @@ export async function deleteCapture(id: string): Promise<void> {
 export async function copyToClipboard(imageData: string): Promise<void> {
   return invoke('copy_to_clipboard', { imageData });
 }
+
+export interface RecordingStatus {
+  state: 'idle' | 'recording' | 'paused';
+  duration_secs: number;
+  output_path: string | null;
+}
+
+export async function startRecording(outputDir?: string, fps?: number): Promise<void> {
+  return invoke('start_recording', { outputDir, fps });
+}
+
+export async function stopRecording(): Promise<string> {
+  return invoke('stop_recording');
+}
+
+export async function pauseRecording(): Promise<void> {
+  return invoke('pause_recording');
+}
+
+export async function resumeRecording(): Promise<void> {
+  return invoke('resume_recording');
+}
+
+export async function getRecordingStatus(): Promise<RecordingStatus> {
+  return invoke('get_recording_status');
+}

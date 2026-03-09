@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
 type CaptureMode = 'fullscreen' | 'region' | 'window';
-type AppView = 'home' | 'editor' | 'library' | 'settings';
+type AppView = 'home' | 'editor' | 'library' | 'settings' | 'recording';
 
 interface CaptureState {
   captureMode: CaptureMode;

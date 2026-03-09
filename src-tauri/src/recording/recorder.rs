@@ -223,7 +223,7 @@ impl ScreenRecorder {
             return Err("Recording is already in progress".into());
         }
 
-        let fps = fps.unwrap_or(10).max(1).min(30);
+        let fps = fps.unwrap_or(10).clamp(1, 30);
         let dir = match output_dir {
             Some(d) => PathBuf::from(d),
             None => std::env::temp_dir().join("opensnag_recordings"),

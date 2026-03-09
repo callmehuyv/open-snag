@@ -107,6 +107,7 @@ impl Database {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub fn search_captures(&self, query: &str) -> Result<Vec<CaptureRecord>, String> {
         let conn = self.conn.lock().map_err(|e| format!("Lock error: {}", e))?;
         let search_pattern = format!("%{}%", query);

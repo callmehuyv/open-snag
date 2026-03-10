@@ -23,7 +23,7 @@ pub fn get_thumbnail_dir() -> Result<PathBuf, String> {
 
 pub fn generate_filename(prefix: &str) -> String {
     let timestamp = Local::now().format("%Y%m%d_%H%M%S");
-    format!("{}_{}.png", prefix, timestamp)
+    format!("{}_{}.webp", prefix, timestamp)
 }
 
 pub fn save_capture(image_data: &[u8], filename: &str) -> Result<PathBuf, String> {

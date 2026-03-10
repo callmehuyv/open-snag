@@ -235,12 +235,13 @@ const AnnotationCanvas = forwardRef<CanvasHandle>(function AnnotationCanvas(_pro
       canvas.renderAll();
 
       const dataUrl = canvas.toDataURL({
-        format: 'png',
+        format: 'webp',
+        quality: 0.95,
         multiplier: 1,
       });
 
-      // Strip the data:image/png;base64, prefix
-      return dataUrl.replace(/^data:image\/png;base64,/, '');
+      // Strip the data:image/webp;base64, prefix
+      return dataUrl.replace(/^data:image\/webp;base64,/, '');
     },
 
     exportJSON: (): string => {

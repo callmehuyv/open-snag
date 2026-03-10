@@ -288,7 +288,7 @@ impl ScreenRecorder {
                     } else {
                         image::DynamicImage::ImageRgba8(img)
                     };
-                    let path = frames_dir_clone.join(format!("frame_{:08}.png", frame_num));
+                    let path = frames_dir_clone.join(format!("frame_{:08}.webp", frame_num));
                     let _ = frame.save(&path);
                     frame_num += 1;
                 }
@@ -400,7 +400,7 @@ impl ScreenRecorder {
                     } else {
                         image::DynamicImage::ImageRgba8(img)
                     };
-                    let path = frames_dir_clone.join(format!("frame_{:08}.png", frame_num));
+                    let path = frames_dir_clone.join(format!("frame_{:08}.webp", frame_num));
                     let _ = frame.save(&path);
                     frame_num += 1;
                 }

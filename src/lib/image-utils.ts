@@ -19,8 +19,8 @@ export function cropBase64Image(
         return;
       }
       ctx.drawImage(img, x, y, width, height, 0, 0, width, height);
-      const dataUrl = canvas.toDataURL('image/png');
-      resolve(dataUrl.replace(/^data:image\/png;base64,/, ''));
+      const dataUrl = canvas.toDataURL('image/webp', 0.95);
+      resolve(dataUrl.replace(/^data:image\/webp;base64,/, ''));
     };
     img.onerror = () => reject('Failed to load image');
     img.src = `data:image/png;base64,${base64Data}`;

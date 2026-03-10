@@ -210,21 +210,20 @@ pub async fn copy_to_clipboard(
         .decode(&image_data)
         .map_err(|e| format!("Failed to decode base64: {}", e))?;
 
-    // Write to a temp file and read as image for clipboard
-    let temp_dir = std::env::temp_dir();
-    let temp_path = temp_dir.join("opensnag_clipboard.png");
-    std::fs::write(&temp_path, &image_bytes)
-        .map_err(|e| format!("Failed to write temp file: {}", e))?;
+    // Decode the image (supports PNG, WebP, etc.) into raw RGBA
+    let decoded = image::load_from_memory(&image_bytes)
+        .map_err(|e| format!("Failed to decode image: {}", e))?;
+    let rgba = decoded.to_rgba8();
 
-    let img = tauri::image::Image::from_bytes(&image_bytes)
-        .map_err(|e| format!("Failed to create image: {}", e))?;
+    let img = tauri::image::Image::new_owned(
+        rgba.as_raw().to_vec(),
+        rgba.width(),
+        rgba.height(),
+    );
 
     app.clipboard()
         .write_image(&img)
         .map_err(|e| format!("Failed to copy to clipboard: {}", e))?;
-
-    // Clean up temp file
-    let _ = std::fs::remove_file(&temp_path);
 
     Ok(())
 }

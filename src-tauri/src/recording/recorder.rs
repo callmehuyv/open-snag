@@ -413,4 +413,9 @@ impl ScreenRecorder {
         inner.state = RecordingState::Recording;
         Ok(())
     }
+
+    /// Force-stop any active recording. Does nothing if idle. Used during app shutdown.
+    pub fn force_stop(&self) {
+        let _ = self.stop_recording();
+    }
 }

@@ -54,6 +54,14 @@ pub fn run() {
 
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app, event| {
+            if let tauri::RunEvent::Exit = event {
+                // Stop any active recording when the app exits
+                if let Some(recorder) = app.try_state::<RecorderState>() {
+                    let _ = recorder.0.force_stop();
+                }
+            }
+        });
 }

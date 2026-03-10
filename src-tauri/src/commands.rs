@@ -40,6 +40,51 @@ pub struct WindowInfo {
 }
 
 #[tauri::command]
+pub async fn check_screen_permission() -> Result<bool, String> {
+    #[cfg(target_os = "macos")]
+    {
+        // On macOS, try to capture a tiny test — if permission is denied, CGDisplayStream
+        // or ScreenCaptureKit will fail. A simpler check: CGPreflightScreenCaptureAccess
+        // is available on macOS 10.15+.
+        // We use a quick test capture via xcap. If it returns a 0x0 or all-black image,
+        // permission is likely denied.
+        match xcap::Monitor::all() {
+            Ok(monitors) => {
+                if let Some(monitor) = monitors.first() {
+                    match monitor.capture_image() {
+                        Ok(img) => {
+                            // If we got an image with actual dimensions, permission is granted
+                            Ok(img.width() > 0 && img.height() > 0)
+                        }
+                        Err(_) => Ok(false),
+                    }
+                } else {
+                    Ok(false)
+                }
+            }
+            Err(_) => Ok(false),
+        }
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        // On Windows/Linux, screen capture generally doesn't need special permission
+        Ok(true)
+    }
+}
+
+#[tauri::command]
+pub async fn open_screen_permission_settings() -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .arg("x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture")
+            .spawn()
+            .map_err(|e| format!("Failed to open settings: {}", e))?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn capture_fullscreen(monitor_index: usize) -> Result<CaptureResult, String> {
     let output = screenshot::capture_full_screen(monitor_index)?;
     Ok(CaptureResult {

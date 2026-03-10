@@ -9,7 +9,7 @@ export function useCapture() {
     try {
       setIsCapturing(true);
       const result = await api.captureFullscreen(monitorIndex);
-      setCurrentCapture(result.image_data, result.width, result.height);
+      setCurrentCapture(result.base64_image, result.width, result.height);
       setCurrentView('editor');
     } catch (error) {
       console.error('Fullscreen capture failed:', error);
@@ -22,7 +22,7 @@ export function useCapture() {
     try {
       setIsCapturing(true);
       const result = await api.captureRegion(x, y, width, height);
-      setCurrentCapture(result.image_data, result.width, result.height);
+      setCurrentCapture(result.base64_image, result.width, result.height);
       setCurrentView('editor');
     } catch (error) {
       console.error('Region capture failed:', error);
@@ -35,7 +35,7 @@ export function useCapture() {
     try {
       setIsCapturing(true);
       const result = await api.captureWindow(windowId);
-      setCurrentCapture(result.image_data, result.width, result.height);
+      setCurrentCapture(result.base64_image, result.width, result.height);
       setCurrentView('editor');
     } catch (error) {
       console.error('Window capture failed:', error);

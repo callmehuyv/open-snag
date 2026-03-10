@@ -10,6 +10,7 @@
     "frontendDist": "../dist"
   },
   "app": {
+    "macOSPrivateApi": true,
     "trayIcon": {
       "iconPath": "icons/32x32.png",
       "iconAsTemplate": true
@@ -18,25 +19,12 @@
       {
         "label": "main",
         "title": "OpenSnag",
-        "width": 800,
-        "height": 600,
-        "visible": false
-      },
-      {
-        "label": "editor",
-        "title": "OpenSnag Editor",
-        "width": 800,
-        "height": 600,
-        "center": true,
-        "visible": false
-      },
-      {
-        "label": "overlay",
-        "title": "OpenSnag Overlay",
-        "fullscreen": true,
-        "transparent": true,
-        "decorations": false,
-        "visible": false
+        "width": 720,
+        "height": 240,
+        "resizable": false,
+        "alwaysOnTop": true,
+        "visible": true,
+        "center": true
       }
     ],
     "security": {
@@ -52,6 +40,12 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "windows": {
+      "nsis": {
+        "installMode": "both",
+        "displayLanguageSelector": true
+      }
+    }
   }
 }

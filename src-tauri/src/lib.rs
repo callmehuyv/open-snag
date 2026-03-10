@@ -18,6 +18,8 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_notification::init())
         .invoke_handler(tauri::generate_handler![
+            commands::check_screen_permission,
+            commands::open_screen_permission_settings,
             commands::capture_fullscreen,
             commands::capture_region,
             commands::list_monitors,

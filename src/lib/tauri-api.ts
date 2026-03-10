@@ -1,7 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 
 export interface CaptureResult {
-  image_data: string; // base64 PNG
+  base64_image: string; // base64 PNG
   width: number;
   height: number;
 }
@@ -33,6 +33,14 @@ export interface CaptureRecord {
   created_at: string;
   tags: string;
   thumbnail_path: string;
+}
+
+export async function checkScreenPermission(): Promise<boolean> {
+  return invoke('check_screen_permission');
+}
+
+export async function openScreenPermissionSettings(): Promise<void> {
+  return invoke('open_screen_permission_settings');
 }
 
 export async function captureFullscreen(monitorIndex: number = 0): Promise<CaptureResult> {

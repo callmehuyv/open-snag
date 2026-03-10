@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useRecordingStore } from '../stores/recordingStore';
 import * as api from '../lib/tauri-api';
+import type { RecordingRegion } from '../lib/tauri-api';
 
 export function formatDuration(secs: number): string {
   const minutes = Math.floor(secs / 60);
@@ -35,9 +36,9 @@ export function useRecording() {
     }, 1000);
   }, [clearTimer, setDurationSecs]);
 
-  const startRecording = useCallback(async (outputDir?: string, fps?: number) => {
+  const startRecording = useCallback(async (outputDir?: string, fps?: number, region?: RecordingRegion) => {
     try {
-      await api.startRecording(outputDir, fps);
+      await api.startRecording(outputDir, fps, region);
       reset();
       setRecordingState('recording');
       startTimer();

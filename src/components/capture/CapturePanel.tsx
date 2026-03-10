@@ -328,12 +328,53 @@ export default function CapturePanel() {
   const handleCapture = async () => {
     console.log('[OpenSnag] handleCapture called, mode:', captureTabMode);
 
+    const { selectionType } = useCaptureStore.getState();
+
     if (captureTabMode === 'video') {
+      // Check permission first
       try {
-        await startRecording();
-        setCurrentView('recording');
-      } catch (error) {
-        console.error('Failed to start recording:', error);
+        const hasPermission = await api.checkScreenPermission();
+        if (!hasPermission) {
+          setShowPermissionDialog(true);
+          return;
+        }
+      } catch {
+        // If check fails, try anyway
+      }
+
+      if (selectionType === 'region') {
+        // Region video: show selector overlay, then start recording with coords
+        const win = getCurrentWindow();
+        try {
+          await win.hide();
+          await new Promise((r) => setTimeout(r, 300));
+          const result = await api.captureFullscreen(0);
+          if (result && result.base64_image) {
+            useCaptureStore.getState().enterSelectionMode(
+              result.base64_image,
+              result.width,
+              result.height,
+              true // forVideo
+            );
+            await win.setDecorations(false);
+            await win.setFullscreen(true);
+            await win.setAlwaysOnTop(true);
+            await win.show();
+          } else {
+            await win.show();
+          }
+        } catch (error) {
+          console.error('[OpenSnag] Video region capture failed:', error);
+          await win.show();
+        }
+      } else {
+        // Fullscreen / window video: start recording immediately
+        try {
+          await startRecording();
+          setCurrentView('recording');
+        } catch (error) {
+          console.error('Failed to start recording:', error);
+        }
       }
       return;
     }

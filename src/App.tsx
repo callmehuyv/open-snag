@@ -1,5 +1,6 @@
-import { useEffect, useCallback, useState } from 'react';
+import { useEffect, useCallback, useState, useRef } from 'react';
 import { useCaptureStore } from './stores/captureStore';
+import { useRecording } from './hooks/useRecording';
 import { listen } from '@tauri-apps/api/event';
 import { getCurrentWindow, LogicalSize } from '@tauri-apps/api/window';
 import Editor from './components/editor/Editor';
@@ -62,6 +63,9 @@ function RecordingView() {
 
 function App() {
   const { currentView, isSelectingRegion, screenshotForSelection, screenshotWidth, screenshotHeight } = useCaptureStore();
+  const { startRecording } = useRecording();
+  const startRecordingRef = useRef(startRecording);
+  startRecordingRef.current = startRecording;
 
   // Resize window when switching views
   useEffect(() => {
@@ -79,8 +83,35 @@ function App() {
     async (x: number, y: number, width: number, height: number) => {
       const store = useCaptureStore.getState();
       const screenshot = store.screenshotForSelection;
+      const isForVideo = store.isSelectingForVideo;
       if (!screenshot) return;
 
+      // Exit selection mode first
+      store.exitSelectionMode();
+
+      // Restore window from fullscreen
+      const win = getCurrentWindow();
+      await win.setFullscreen(false);
+      await win.setDecorations(true);
+
+      if (isForVideo) {
+        // Start recording with the selected region
+        try {
+          await startRecordingRef.current(undefined, undefined, {
+            regionX: Math.round(x),
+            regionY: Math.round(y),
+            regionWidth: Math.round(width),
+            regionHeight: Math.round(height),
+          });
+          store.setCurrentView('recording');
+        } catch (error) {
+          console.error('Failed to start region recording:', error);
+          await resizeWindow(PANEL_SIZE.width, PANEL_SIZE.height, false, true);
+        }
+        return;
+      }
+
+      // Screenshot flow
       try {
         const cropped = await cropBase64Image(
           screenshot,
@@ -91,14 +122,6 @@ function App() {
           store.screenshotWidth,
           store.screenshotHeight
         );
-
-        // Exit selection mode first
-        store.exitSelectionMode();
-
-        // Restore window from fullscreen
-        const win = getCurrentWindow();
-        await win.setFullscreen(false);
-        await win.setDecorations(true);
 
         // Copy to clipboard if enabled
         if (store.copyToClipboard) {
@@ -116,10 +139,6 @@ function App() {
         }
       } catch (error) {
         console.error('Crop failed:', error);
-        useCaptureStore.getState().exitSelectionMode();
-        const win = getCurrentWindow();
-        await win.setFullscreen(false);
-        await win.setDecorations(true);
         await resizeWindow(PANEL_SIZE.width, PANEL_SIZE.height, false, true);
       }
     },

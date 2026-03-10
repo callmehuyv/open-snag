@@ -18,6 +18,15 @@ pub struct RecordingStatus {
     pub output_path: Option<String>,
 }
 
+/// Optional recording region (x, y, width, height).
+#[derive(Debug, Clone, Copy)]
+pub struct RecordingRegion {
+    pub x: i32,
+    pub y: i32,
+    pub width: u32,
+    pub height: u32,
+}
+
 /// Internal state shared across threads.
 struct RecorderInner {
     state: RecordingState,
@@ -26,6 +35,8 @@ struct RecorderInner {
     started_at: Option<Instant>,
     /// Accumulated duration from previous recording segments (before pauses).
     accumulated_secs: f64,
+    /// Optional region to record.
+    region: Option<RecordingRegion>,
     /// Handle to the macOS screencapture child process.
     #[cfg(target_os = "macos")]
     child_process: Option<std::process::Child>,
@@ -47,6 +58,7 @@ impl RecorderInner {
             output_path: None,
             started_at: None,
             accumulated_secs: 0.0,
+            region: None,
             #[cfg(target_os = "macos")]
             child_process: None,
             #[cfg(not(target_os = "macos"))]
@@ -102,6 +114,7 @@ impl ScreenRecorder {
         &self,
         output_dir: Option<String>,
         _fps: Option<u32>,
+        region: Option<RecordingRegion>,
     ) -> Result<(), String> {
         let mut inner = self.inner.lock().map_err(|e| format!("Lock poisoned: {}", e))?;
 
@@ -120,15 +133,23 @@ impl ScreenRecorder {
         let output_file = dir.join(format!("recording_{}.mov", timestamp));
 
         // Launch screencapture -v (video mode). It records until the process is
-        // terminated.
-        let child = std::process::Command::new("screencapture")
-            .arg("-v")
-            .arg(output_file.to_string_lossy().to_string())
+        // terminated. If a region is specified, use -R to limit the capture area.
+        let mut cmd = std::process::Command::new("screencapture");
+        cmd.arg("-v");
+
+        if let Some(r) = &region {
+            cmd.arg("-R").arg(format!("{},{},{},{}", r.x, r.y, r.width, r.height));
+        }
+
+        cmd.arg(output_file.to_string_lossy().to_string());
+
+        let child = cmd
             .spawn()
             .map_err(|e| format!("Failed to start screencapture: {}", e))?;
 
         inner.child_process = Some(child);
         inner.output_path = Some(output_file);
+        inner.region = region;
         inner.state = RecordingState::Recording;
         inner.started_at = Some(Instant::now());
         inner.accumulated_secs = 0.0;
@@ -216,6 +237,7 @@ impl ScreenRecorder {
         &self,
         output_dir: Option<String>,
         fps: Option<u32>,
+        region: Option<RecordingRegion>,
     ) -> Result<(), String> {
         let mut inner = self.inner.lock().map_err(|e| format!("Lock poisoned: {}", e))?;
 
@@ -256,8 +278,18 @@ impl ScreenRecorder {
 
             while !cancel_clone.load(std::sync::atomic::Ordering::Relaxed) {
                 if let Ok(img) = monitor.capture_image() {
+                    // Crop to region if specified
+                    let frame = if let Some(r) = &region {
+                        let x = r.x.max(0) as u32;
+                        let y = r.y.max(0) as u32;
+                        let w = r.width.min(img.width().saturating_sub(x));
+                        let h = r.height.min(img.height().saturating_sub(y));
+                        image::DynamicImage::ImageRgba8(img).crop_imm(x, y, w, h)
+                    } else {
+                        image::DynamicImage::ImageRgba8(img)
+                    };
                     let path = frames_dir_clone.join(format!("frame_{:08}.png", frame_num));
-                    let _ = img.save(&path);
+                    let _ = frame.save(&path);
                     frame_num += 1;
                 }
                 std::thread::sleep(interval);
@@ -268,6 +300,7 @@ impl ScreenRecorder {
         inner.frames_dir = Some(frames_dir.clone());
         inner.output_path = Some(frames_dir);
         inner.fps = fps;
+        inner.region = region;
         inner.state = RecordingState::Recording;
         inner.started_at = Some(Instant::now());
         inner.accumulated_secs = 0.0;
@@ -333,6 +366,7 @@ impl ScreenRecorder {
         }
 
         let fps = inner.fps;
+        let region = inner.region;
         let cancel = Arc::new(std::sync::atomic::AtomicBool::new(false));
         let cancel_clone = cancel.clone();
         let frames_dir_clone = inner.frames_dir.clone().ok_or("No frames directory")?;
@@ -357,8 +391,17 @@ impl ScreenRecorder {
 
             while !cancel_clone.load(std::sync::atomic::Ordering::Relaxed) {
                 if let Ok(img) = monitor.capture_image() {
+                    let frame = if let Some(r) = &region {
+                        let x = r.x.max(0) as u32;
+                        let y = r.y.max(0) as u32;
+                        let w = r.width.min(img.width().saturating_sub(x));
+                        let h = r.height.min(img.height().saturating_sub(y));
+                        image::DynamicImage::ImageRgba8(img).crop_imm(x, y, w, h)
+                    } else {
+                        image::DynamicImage::ImageRgba8(img)
+                    };
                     let path = frames_dir_clone.join(format!("frame_{:08}.png", frame_num));
-                    let _ = img.save(&path);
+                    let _ = frame.save(&path);
                     frame_num += 1;
                 }
                 std::thread::sleep(interval);

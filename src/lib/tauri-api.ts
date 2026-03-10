@@ -85,8 +85,15 @@ export interface RecordingStatus {
   output_path: string | null;
 }
 
-export async function startRecording(outputDir?: string, fps?: number): Promise<void> {
-  return invoke('start_recording', { outputDir, fps });
+export interface RecordingRegion {
+  regionX: number;
+  regionY: number;
+  regionWidth: number;
+  regionHeight: number;
+}
+
+export async function startRecording(outputDir?: string, fps?: number, region?: RecordingRegion): Promise<void> {
+  return invoke('start_recording', { outputDir, fps, ...region });
 }
 
 export async function stopRecording(): Promise<string> {

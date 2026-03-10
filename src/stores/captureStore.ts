@@ -17,6 +17,8 @@ interface CaptureState {
 
   // Region selection mode
   isSelectingRegion: boolean;
+  /** Whether region selection is for video recording (vs screenshot) */
+  isSelectingForVideo: boolean;
   screenshotForSelection: string | null;
   screenshotWidth: number;
   screenshotHeight: number;
@@ -45,7 +47,7 @@ interface CaptureState {
   setCurrentView: (view: AppView) => void;
   clearCapture: () => void;
 
-  enterSelectionMode: (screenshot: string, width: number, height: number) => void;
+  enterSelectionMode: (screenshot: string, width: number, height: number, forVideo?: boolean) => void;
   exitSelectionMode: () => void;
 
   setPreviewInEditor: (value: boolean) => void;
@@ -72,6 +74,7 @@ export const useCaptureStore = create<CaptureState>((set) => ({
   currentView: 'home',
 
   isSelectingRegion: false,
+  isSelectingForVideo: false,
   screenshotForSelection: null,
   screenshotWidth: 0,
   screenshotHeight: 0,
@@ -97,9 +100,10 @@ export const useCaptureStore = create<CaptureState>((set) => ({
   setCurrentView: (view) => set({ currentView: view }),
   clearCapture: () => set({ currentCapture: null, captureWidth: 0, captureHeight: 0 }),
 
-  enterSelectionMode: (screenshot, width, height) =>
+  enterSelectionMode: (screenshot, width, height, forVideo = false) =>
     set({
       isSelectingRegion: true,
+      isSelectingForVideo: forVideo,
       screenshotForSelection: screenshot,
       screenshotWidth: width,
       screenshotHeight: height,
@@ -107,6 +111,7 @@ export const useCaptureStore = create<CaptureState>((set) => ({
   exitSelectionMode: () =>
     set({
       isSelectingRegion: false,
+      isSelectingForVideo: false,
       screenshotForSelection: null,
       screenshotWidth: 0,
       screenshotHeight: 0,

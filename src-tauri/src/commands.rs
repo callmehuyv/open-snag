@@ -3,7 +3,7 @@ use base64::engine::general_purpose::STANDARD as BASE64;
 use serde::Serialize;
 
 use crate::capture::screenshot;
-use crate::recording::recorder::{RecordingStatus, ScreenRecorder};
+use crate::recording::recorder::{RecordingRegion, RecordingStatus, ScreenRecorder};
 use crate::storage::database::{CaptureRecord, Database};
 use crate::storage::filesystem;
 
@@ -238,8 +238,21 @@ pub async fn start_recording(
     state: tauri::State<'_, RecorderState>,
     output_dir: Option<String>,
     fps: Option<u32>,
+    region_x: Option<i32>,
+    region_y: Option<i32>,
+    region_width: Option<u32>,
+    region_height: Option<u32>,
 ) -> Result<(), String> {
-    state.0.start_recording(output_dir, fps)
+    let region = match (region_x, region_y, region_width, region_height) {
+        (Some(x), Some(y), Some(w), Some(h)) => Some(RecordingRegion {
+            x,
+            y,
+            width: w,
+            height: h,
+        }),
+        _ => None,
+    };
+    state.0.start_recording(output_dir, fps, region)
 }
 
 #[tauri::command]

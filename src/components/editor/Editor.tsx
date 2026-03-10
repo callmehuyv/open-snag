@@ -100,6 +100,21 @@ export default function Editor() {
 
   return (
     <div className="flex flex-col h-screen bg-zinc-900 text-zinc-100">
+      {/* Draggable title bar */}
+      <div
+        data-tauri-drag-region
+        className="flex items-center justify-between px-4 py-1.5 bg-zinc-900 border-b border-zinc-800 cursor-default select-none"
+      >
+        <span data-tauri-drag-region className="text-[11px] text-zinc-500 font-medium">OpenSnag Editor</span>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setCurrentView('home')}
+            className="w-3 h-3 rounded-full bg-red-500 hover:bg-red-400 transition-colors"
+            title="Close"
+          />
+        </div>
+      </div>
+
       {/* Toolbar */}
       <div className="flex items-center gap-1 px-3 py-2 bg-zinc-800 border-b border-zinc-700">
         <button

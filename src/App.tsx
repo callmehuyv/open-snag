@@ -16,8 +16,10 @@ import './App.css';
 const PANEL_SIZE = { width: 720, height: 240 };
 const EDITOR_SIZE = { width: 1200, height: 800 };
 
-async function resizeWindow(width: number, height: number, resizable: boolean, alwaysOnTop: boolean) {
+async function resizeWindow(width: number, height: number, resizable: boolean, alwaysOnTop: boolean, decorations = true) {
   const win = getCurrentWindow();
+  await win.setFullscreen(false);
+  await win.setDecorations(decorations);
   await win.setAlwaysOnTop(alwaysOnTop);
   await win.setResizable(resizable);
   await win.setSize(new LogicalSize(width, height));
@@ -65,24 +67,13 @@ function App() {
   useEffect(() => {
     if (isSelectingRegion) return; // Don't resize when in selection mode
     if (currentView === 'home') {
-      resizeWindow(PANEL_SIZE.width, PANEL_SIZE.height, false, true);
+      resizeWindow(PANEL_SIZE.width, PANEL_SIZE.height, false, true, true);
     } else if (currentView === 'editor' || currentView === 'library') {
-      resizeWindow(EDITOR_SIZE.width, EDITOR_SIZE.height, true, false);
+      resizeWindow(EDITOR_SIZE.width, EDITOR_SIZE.height, true, false, false);
     }
   }, [currentView, isSelectingRegion]);
 
-  // Enter/exit fullscreen for region selection
-  useEffect(() => {
-    const win = getCurrentWindow();
-    if (isSelectingRegion) {
-      (async () => {
-        await win.setResizable(false);
-        await win.setAlwaysOnTop(true);
-        await win.setDecorations(false);
-        await win.setFullscreen(true);
-      })();
-    }
-  }, [isSelectingRegion]);
+  // Fullscreen for region selection is handled in CapturePanel.tsx
 
   const handleSelectionConfirm = useCallback(
     async (x: number, y: number, width: number, height: number) => {

@@ -294,32 +294,40 @@ export default function CapturePanel() {
     const win = getCurrentWindow();
 
     try {
-      // Hide window before capture so it doesn't appear in screenshot
+      console.log('[OpenSnag] Step 1: Hiding window...');
       await win.hide();
-      // Small delay to ensure window is hidden
       await new Promise((r) => setTimeout(r, 300));
 
-      // Take fullscreen screenshot for region selection
+      console.log('[OpenSnag] Step 2: Capturing fullscreen...');
       const result = await api.captureFullscreen(0);
+      console.log('[OpenSnag] Step 3: Capture result:', result ? `${result.width}x${result.height}, data length: ${result.base64_image?.length}` : 'null');
 
-      if (result) {
-        // Enter selection mode — App.tsx will show RegionSelector
+      if (result && result.base64_image) {
+        console.log('[OpenSnag] Step 4: Entering selection mode...');
         useCaptureStore.getState().enterSelectionMode(
           result.base64_image,
           result.width,
           result.height
         );
+        console.log('[OpenSnag] Step 5: Going fullscreen...');
+        await win.setDecorations(false);
+        await win.setFullscreen(true);
+        await win.setAlwaysOnTop(true);
         await win.show();
+        console.log('[OpenSnag] Step 6: Window shown in fullscreen');
       } else {
+        console.error('[OpenSnag] No capture result or empty image');
         await win.show();
       }
     } catch (error) {
-      console.error('Capture failed:', error);
+      console.error('[OpenSnag] Capture failed:', error);
       await win.show();
     }
   };
 
   const handleCapture = async () => {
+    console.log('[OpenSnag] handleCapture called, mode:', captureTabMode);
+
     if (captureTabMode === 'video') {
       try {
         await startRecording();
@@ -332,7 +340,9 @@ export default function CapturePanel() {
 
     // Check screen recording permission first
     try {
+      console.log('[OpenSnag] Checking permission...');
       const hasPermission = await api.checkScreenPermission();
+      console.log('[OpenSnag] Permission result:', hasPermission);
       if (!hasPermission) {
         setShowPermissionDialog(true);
         return;
